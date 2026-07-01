@@ -1,5 +1,6 @@
 const bcrypt = require("bcrypt");
 const User = require("../models/user");
+const generateToken = require("../utils/generateToken");
 exports.registerUser = async (req, res) => {
     try {
         // Get data from request body
@@ -87,7 +88,12 @@ exports.loginUser = async (req, res) => {
         return res.status(200).json({
             success: true,
             message: "User logged in successfully!",
-            user
+            token: generateToken({ id: user._id }),
+            user: {
+                id: user._id,
+                username: user.username,
+                email: user.email
+            }
         });
 
     } catch (error) {
