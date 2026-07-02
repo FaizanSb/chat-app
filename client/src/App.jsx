@@ -1,15 +1,25 @@
-import { useState } from 'react'
+import { Routes, Route, Navigate } from "react-router-dom";
 
-
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import Chat from "./pages/Chat";
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-   <>
-    <h1 className="bg-purple-500 text-white p-4 text-center">Welcome to my Chat APP</h1>
-   </>
-  )
+    <Routes>
+
+      {/* Redirect root to login */}
+      <Route path="/" element={<Navigate to="/login" />} />
+
+      {/* Authentication */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+
+      {/* Chat */}
+      <Route path="/chat" element={<Chat />} />
+
+    </Routes>
+  );
 }
 
-export default App
+export default App;
