@@ -1,35 +1,53 @@
-function Sidebar({ users }) {
-    return (
-        <div className="w-80 h-screen border-r border-gray-300 p-4">
+import UserCard from "./UserCard";
 
-            <h2 className="text-2xl font-bold mb-6">
-                Users
-            </h2>
+function Sidebar({ users, selectedUser, setSelectedUser }) {
+  return (
+    <div className="w-80 h-screen border-r border-gray-300 bg-white">
 
-            <div className="space-y-3">
+      {/* Header */}
+      <div className="p-5 border-b">
+        <h1 className="text-2xl font-bold">
+          Chat App
+        </h1>
+      </div>
 
-                {users.map((user) => (
+      {/* Search */}
+      <div className="p-4">
+        <input
+          type="text"
+          placeholder="Search user..."
+          className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
 
-                    <div
-                        key={user._id}
-                        className="p-3 rounded-lg border cursor-pointer hover:bg-gray-100 transition"
-                    >
-                        <h3 className="font-semibold">
-                            {user.username}
-                        </h3>
+      {/* Users */}
+      <div className="px-3 space-y-2">
 
-                        <p className="text-sm text-gray-500">
-                            {user.email}
-                        </p>
+        {users.length > 0 ? (
 
-                    </div>
+          users.map((user) => (
 
-                ))}
+            <UserCard
+              key={user._id}
+              user={user}
+              selected={selectedUser?._id === user._id}
+              onClick={() => setSelectedUser(user)}
+            />
 
-            </div>
+          ))
 
-        </div>
-    );
+        ) : (
+
+          <p className="text-center text-gray-500">
+            No users found
+          </p>
+
+        )}
+
+      </div>
+
+    </div>
+  );
 }
 
 export default Sidebar;
