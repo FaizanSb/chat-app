@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
+const messageRoutes = require("./routes/messageRoutes");
 require("dotenv").config(); // Load environment variables from .env file
 
 const app = express();
@@ -26,6 +27,9 @@ app.use("/api/auth", authRoutes); // Use the auth routes for authentication-rela
 
 app.use("/api/users", userRoutes); // Use the user routes for user-related endpoints
 // Start listening for requests
+
+app.use("/api/messages", messageRoutes); // Use the message routes for message-related endpoints
+
 app.listen(PORT, () => {
   console.log(`Server is listening on port ${PORT}`);
 });
