@@ -3,6 +3,10 @@ import { getUsers } from "../services/userService";
 import Loader from "../components/Loader";
 import Sidebar from "../components/Sidebar";
 import UserCard from "../components/UserCard";
+import {
+  sendMessage,
+  getMessages,
+} from "../services/messageService";
 
 function Chat() {
 
@@ -10,12 +14,19 @@ function Chat() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
+  const currentUser = JSON.parse(localStorage.getItem("user"));
+
+  //console.log("Current User:", currentUser);
 
   useEffect(() => {
-
     fetchUsers();
-
   }, []);
+
+  useEffect(() => {
+    if (selectedUser) {
+      fetchMessages();
+    }
+  }, [selectedUser]);
 
   const fetchUsers = async () => {
 
@@ -35,17 +46,50 @@ function Chat() {
 
   };
 
-  const handleSend = () => {
+  const fetchMessages = async () => {
+
+    if (!selectedUser) return;
+
+    try {
+
+      const data = await getMessages(
+        currentUser.id,
+        selectedUser._id
+      );
+
+      setMessages(data.messages);
+
+    } catch (error) {
+
+      console.error(error.message);
+
+    }
+
+  };
+  const handleSend = async () => {
+
     if (!newMessage.trim()) return;
 
-    const message = {
-      id: Date.now(),
-      text: newMessage,
-      sender: "me",
-    };
+    if (!selectedUser) return;
 
-    setMessages([...messages, message]);
-    setNewMessage("");
+    try {
+
+      const data = await sendMessage({
+        sender: currentUser.id,
+        receiver: selectedUser._id,
+        text: newMessage,
+      });
+
+      setMessages((prev) => [...prev, data.data]);
+
+      setNewMessage("");
+
+    } catch (error) {
+
+      console.error(error.message);
+
+    }
+
   };
 
   return (
@@ -85,20 +129,28 @@ function Chat() {
                   No messages yet
                 </p>
               ) : (
-                messages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={`mb-3 flex ${msg.sender === "me" ? "justify-end" : "justify-start"
-                      }`}
-                  >
-                    <div className="bg-blue-600 text-white px-4 py-2 rounded-lg max-w-xs">
-                      {msg.text}
+                messages.map((msg) => {
+                  const isSender = msg.sender === currentUser.id;
+
+                  return (
+                    <div
+                      key={msg._id}
+                      className={`mb-3 flex ${isSender ? "justify-end" : "justify-start"}`}
+                    >
+                      <div
+                        className={`px-4 py-2 rounded-lg max-w-xs ${isSender
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-200 text-gray-900"
+                          }`}
+                      >
+                        {msg.text}
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
-            
+
             {/* Message Input */}
 
             <div className="bg-white border-t p-4 flex gap-3">

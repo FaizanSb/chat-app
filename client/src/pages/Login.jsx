@@ -32,12 +32,17 @@ const Login = () => {
     try {
       const data = await loginUser(formData)
       console.log('Logged in successfully:', data)
-      
+
 
       // Login ke baad token milta hai backend se — usko save karo
       // taake utils/axios.js ka interceptor use kar sake
       if (data.token) {
-        localStorage.setItem('token', data.token)
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(data.user));
+
+        console.log("Saved User:", localStorage.getItem("user"));
+        console.log("Parsed User:", JSON.parse(localStorage.getItem("user")));
+        console.log("All Storage:", localStorage);
       }
 
       alert('Login successful!')
