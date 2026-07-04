@@ -25,11 +25,11 @@ exports.getUsers = async (req, res) => {
             });
         });
 
-        console.log("Current User:", currentUserId);
-        console.log("Users:", users.map((u) => ({
-            id: u._id.toString(),
-            username: u.username,
-        })));
+        // console.log("Current User:", currentUserId);
+        // console.log("Users:", users.map((u) => ({
+        //     id: u._id.toString(),
+        //     username: u.username,
+        // })));
 
         const updatedUsers = await Promise.all(
 
@@ -53,7 +53,7 @@ exports.getUsers = async (req, res) => {
 
                 }).sort({ createdAt: -1 });
 
-                console.log("Last Message is ", lastMessage);
+                // console.log("Last Message is ", lastMessage);
 
                 return {
 

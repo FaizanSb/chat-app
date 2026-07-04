@@ -7,6 +7,7 @@ import {
   sendMessage,
   getMessages,
 } from "../services/messageService";
+import socket from "../socket";
 
 function Chat() {
 
@@ -27,6 +28,38 @@ function Chat() {
       fetchMessages();
     }
   }, [selectedUser]);
+
+  // socket event listeners
+  useEffect(() => {
+    socket.on("connect", () => {
+      console.log("Connected to server");
+      console.log(socket.id);
+
+      socket.emit("join", currentUser.id);
+    });
+
+    return () => {
+      socket.off("connect");
+    };
+  }, []);
+
+  useEffect(() => {
+
+    socket.on("receive_message", (message) => {
+
+      console.log("New Message:", message);
+
+      setMessages((prev) => [...prev, message]);
+
+    });
+
+    return () => {
+
+      socket.off("receive_message");
+
+    };
+
+  }, []);
 
   const fetchUsers = async () => {
 
@@ -82,6 +115,8 @@ function Chat() {
 
       setMessages((prev) => [...prev, data.data]);
 
+      socket.emit("send_message", data.data);
+
       setNewMessage("");
       await fetchUsers();
 
@@ -131,7 +166,8 @@ function Chat() {
                 </p>
               ) : (
                 messages.map((msg) => {
-                  const isSender = msg.sender === currentUser.id;
+                  const isSender =
+                    msg.sender?.toString() === currentUser.id.toString();
 
                   return (
                     <div
