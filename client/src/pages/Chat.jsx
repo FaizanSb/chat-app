@@ -34,7 +34,7 @@ function Chat() {
 
       const data = await getUsers();
 
-      console.log(data);
+      console.log("Users Response:", data.users);
 
       setUsers(data.users);
 
@@ -83,6 +83,7 @@ function Chat() {
       setMessages((prev) => [...prev, data.data]);
 
       setNewMessage("");
+      await fetchUsers();
 
     } catch (error) {
 
@@ -139,8 +140,8 @@ function Chat() {
                     >
                       <div
                         className={`px-4 py-2 rounded-lg max-w-xs ${isSender
-                            ? "bg-blue-600 text-white"
-                            : "bg-gray-200 text-gray-900"
+                          ? "bg-blue-600 text-white"
+                          : "bg-gray-200 text-gray-900"
                           }`}
                       >
                         {msg.text}

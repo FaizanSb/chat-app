@@ -13,8 +13,8 @@ function UserCard({ user, selected, onClick }) {
 
         <span
           className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${user.status === "online"
-              ? "bg-green-500"
-              : "bg-gray-400"
+            ? "bg-green-500"
+            : "bg-gray-400"
             }`}
         ></span>
       </div>
@@ -23,8 +23,8 @@ function UserCard({ user, selected, onClick }) {
       <div>
         <h3 className="font-semibold">{user.username}</h3>
 
-        <p className="text-sm text-gray-500">
-          No messages yet
+        <p className="text-sm text-gray-500 truncate">
+          {user.lastMessage}
         </p>
       </div>
     </div>
