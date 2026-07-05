@@ -14,9 +14,15 @@ function initializeSocket(server) {
     console.log("User Connected:", socket.id);
 
     socket.on("join", (userId) => {
+
+      socket.userId = userId;
+
       onlineUsers[userId] = socket.id;
 
-      console.log("Online Users:", onlineUsers);
+      io.emit("online_users", Object.keys(onlineUsers));
+
+      console.log(onlineUsers);
+
     });
 
     socket.on("send_message", (data) => {
@@ -28,7 +34,13 @@ function initializeSocket(server) {
     });
 
     socket.on("disconnect", () => {
-      console.log("User Disconnected:", socket.id);
+
+      delete onlineUsers[socket.userId];
+
+      io.emit("online_users", Object.keys(onlineUsers));
+
+      console.log(onlineUsers);
+
     });
   });
 }

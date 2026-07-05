@@ -1,4 +1,16 @@
-function UserCard({ user, selected, onClick }) {
+function UserCard({
+  user,
+  onlineUsers,
+  selected,
+  onClick,
+}) {
+
+  console.log("onlineUsers:", onlineUsers);
+  console.log("Type:", typeof onlineUsers);
+  console.log("Is Array:", Array.isArray(onlineUsers));
+
+  const isOnline = onlineUsers.includes(user._id);
+
   return (
     <div
       onClick={onClick}
@@ -12,14 +24,11 @@ function UserCard({ user, selected, onClick }) {
         </div>
 
         <span
-          className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${user.status === "online"
-            ? "bg-green-500"
-            : "bg-gray-400"
+          className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${isOnline ? "bg-green-500" : "bg-gray-400"
             }`}
         ></span>
       </div>
 
-      {/* User Info */}
       <div>
         <h3 className="font-semibold">{user.username}</h3>
 

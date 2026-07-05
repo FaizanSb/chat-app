@@ -16,6 +16,7 @@ function Chat() {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const currentUser = JSON.parse(localStorage.getItem("user"));
+  const [onlineUsers, setOnlineUsers] = useState([]);
 
   //console.log("Current User:", currentUser);
 
@@ -43,6 +44,24 @@ function Chat() {
     };
   }, []);
 
+  // socket event listeners
+  useEffect(() => {
+
+    socket.on("online_users", (users) => {
+
+      console.log("Online Users:", users);
+
+      setOnlineUsers(users);
+
+    });
+
+    return () => {
+
+      socket.off("online_users");
+
+    };
+
+  }, []);
   useEffect(() => {
 
     socket.on("receive_message", (message) => {
@@ -128,12 +147,15 @@ function Chat() {
 
   };
 
+  const isSelectedUserOnline =
+    selectedUser && onlineUsers.includes(selectedUser._id);
   return (
 
 
     <div className="flex h-screen bg-gray-100">
       <Sidebar
         users={users}
+        onlineUsers={onlineUsers}
         selectedUser={selectedUser}
         setSelectedUser={setSelectedUser}
       />
@@ -151,8 +173,11 @@ function Chat() {
                 {selectedUser.username}
               </h2>
 
-              <p className="text-sm text-gray-500">
-                {selectedUser.status}
+              <p
+                className={`text-sm font-medium ${isSelectedUserOnline ? "text-green-600" : "text-gray-500"
+                  }`}
+              >
+                {isSelectedUserOnline ? "🟢 Online" : "⚫ Offline"}
               </p>
 
             </div>

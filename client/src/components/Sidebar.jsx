@@ -1,6 +1,11 @@
 import UserCard from "./UserCard";
 
-function Sidebar({ users, selectedUser, setSelectedUser }) {
+function Sidebar({
+  users,
+  onlineUsers,
+  selectedUser,
+  setSelectedUser
+}) {
   return (
     <div className="w-80 h-screen border-r border-gray-300 bg-white">
 
@@ -30,10 +35,10 @@ function Sidebar({ users, selectedUser, setSelectedUser }) {
             <UserCard
               key={user._id}
               user={user}
+              onlineUsers={onlineUsers}
               selected={selectedUser?._id === user._id}
               onClick={() => setSelectedUser(user)}
             />
-
           ))
 
         ) : (
