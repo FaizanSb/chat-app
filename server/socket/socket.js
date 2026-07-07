@@ -33,6 +33,26 @@ function initializeSocket(server) {
       }
     });
 
+    socket.on("typing", ({ sender, receiver }) => {
+
+      const receiverSocket = onlineUsers[receiver];
+
+      if (receiverSocket) {
+        io.to(receiverSocket).emit("user_typing", { sender });
+      }
+
+    });
+
+    socket.on("stop_typing", ({ receiver }) => {
+
+      const receiverSocket = onlineUsers[receiver];
+
+      if (receiverSocket) {
+        io.to(receiverSocket).emit("user_stop_typing");
+      }
+
+    });
+
     socket.on("disconnect", () => {
 
       delete onlineUsers[socket.userId];

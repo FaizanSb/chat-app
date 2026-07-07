@@ -46,7 +46,6 @@ function Sidebar({
           <p className="text-center text-gray-500">
             No users found
           </p>
-
         )}
 
       </div>

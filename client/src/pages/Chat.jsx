@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { getUsers } from "../services/userService";
 import Loader from "../components/Loader";
 import Sidebar from "../components/Sidebar";
@@ -17,6 +17,8 @@ function Chat() {
   const [newMessage, setNewMessage] = useState("");
   const currentUser = JSON.parse(localStorage.getItem("user"));
   const [onlineUsers, setOnlineUsers] = useState([]);
+  const [isTyping, setIsTyping] = useState(false);
+  const typingTimeout = useRef(null);
 
   //console.log("Current User:", currentUser);
 
@@ -62,6 +64,7 @@ function Chat() {
     };
 
   }, []);
+
   useEffect(() => {
 
     socket.on("receive_message", (message) => {
@@ -80,6 +83,33 @@ function Chat() {
 
   }, []);
 
+  useEffect(() => {
+    const handleTyping = ({ sender }) => {
+
+      if (sender !== selectedUser?._id) return;
+
+      setIsTyping(true);
+      // alert("User is typing...");
+
+      clearTimeout(typingTimeout.current);
+
+      typingTimeout.current = setTimeout(() => {
+        setIsTyping(false);
+      }, 1500);
+    };
+
+    const handleStopTyping = () => {
+      setIsTyping(false);
+    };
+
+    socket.on("user_typing", handleTyping);
+    socket.on("user_stop_typing", handleStopTyping);
+
+    return () => {
+      socket.off("user_typing", handleTyping);
+      socket.off("user_stop_typing", handleStopTyping);
+    };
+  }, [selectedUser]);
   const fetchUsers = async () => {
 
     try {
@@ -119,13 +149,9 @@ function Chat() {
 
   };
   const handleSend = async () => {
-
-    if (!newMessage.trim()) return;
-
-    if (!selectedUser) return;
+    if (!newMessage.trim() || !selectedUser) return;
 
     try {
-
       const data = await sendMessage({
         sender: currentUser.id,
         receiver: selectedUser._id,
@@ -136,15 +162,16 @@ function Chat() {
 
       socket.emit("send_message", data.data);
 
+      // Stop typing after sending message
+      socket.emit("stop_typing", {
+        receiver: selectedUser._id,
+      });
+
       setNewMessage("");
-      await fetchUsers();
 
     } catch (error) {
-
       console.error(error.message);
-
     }
-
   };
 
   const isSelectedUserOnline =
@@ -173,13 +200,13 @@ function Chat() {
                 {selectedUser.username}
               </h2>
 
-              <p
-                className={`text-sm font-medium ${isSelectedUserOnline ? "text-green-600" : "text-gray-500"
-                  }`}
-              >
-                {isSelectedUserOnline ? "🟢 Online" : "⚫ Offline"}
+              <p className="text-sm font-medium">
+                {isTyping
+                  ? "✍️ Typing..."
+                  : isSelectedUserOnline
+                    ? "🟢 Online"
+                    : "⚫ Offline"}
               </p>
-
             </div>
 
             {/* Messages */}
@@ -221,7 +248,24 @@ function Chat() {
                 type="text"
                 placeholder="Type a message..."
                 value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value;
+
+                  setNewMessage(value);
+
+                  if (!selectedUser) return;
+
+                  if (value.trim() !== "") {
+                    socket.emit("typing", {
+                      sender: currentUser.id,
+                      receiver: selectedUser._id,
+                    });
+                  } else {
+                    socket.emit("stop_typing", {
+                      receiver: selectedUser._id,
+                    });
+                  }
+                }}
                 className="flex-1 border rounded-lg px-4 py-2 outline-none"
               />
 
