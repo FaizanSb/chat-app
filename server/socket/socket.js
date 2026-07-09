@@ -1,4 +1,5 @@
 const { Server } = require("socket.io");
+const Message = require("../models/Message");
 
 const onlineUsers = {};
 
@@ -25,12 +26,41 @@ function initializeSocket(server) {
 
     });
 
-    socket.on("send_message", (data) => {
-      const receiverSocket = onlineUsers[data.receiver.toString()];
+    socket.on("send_message", async (data) => {
+
+
+      const receiverSocket = onlineUsers[data.receiver];
+
+
+      const message = await Message.create({
+
+        sender: data.sender,
+
+        receiver: data.receiver,
+
+        text: data.text,
+
+      });
+
+      // sender ko bhi message return karo
+      socket.emit(
+        "receive_message",
+        message
+      );
+
+      // receiver online hai
 
       if (receiverSocket) {
-        io.to(receiverSocket).emit("receive_message", data);
+
+        message.delivered = true;
+        await message.save();
+
+        io.to(receiverSocket).emit("receive_message", message);
+
+        // NEW: sender ko bata do ke message deliver ho gaya
+        socket.emit("message_delivered", message._id);
       }
+
     });
 
     socket.on("typing", ({ sender, receiver }) => {
@@ -42,6 +72,36 @@ function initializeSocket(server) {
       }
 
     });
+
+    socket.on(
+      "message_seen",
+      async ({ messageId, senderId }) => {
+
+
+        await Message.findByIdAndUpdate(
+          messageId,
+          {
+            isSeen: true
+          }
+        );
+
+
+        const senderSocket =
+          onlineUsers[senderId];
+
+
+        if (senderSocket) {
+
+          io.to(senderSocket)
+            .emit(
+              "message_seen",
+              messageId
+            );
+
+        }
+
+
+      });
 
     socket.on("stop_typing", ({ receiver }) => {
 

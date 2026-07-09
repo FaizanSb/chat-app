@@ -4,7 +4,6 @@ import Loader from "../components/Loader";
 import Sidebar from "../components/Sidebar";
 import UserCard from "../components/UserCard";
 import {
-  sendMessage,
   getMessages,
 } from "../services/messageService";
 import socket from "../socket";
@@ -67,11 +66,43 @@ function Chat() {
 
   useEffect(() => {
 
+  socket.on("message_delivered", (messageId) => {
+
+    setMessages((prev) =>
+      prev.map((msg) =>
+        msg._id === messageId
+          ? { ...msg, delivered: true }
+          : msg
+      )
+    );
+
+  });
+
+  return () => {
+    socket.off("message_delivered");
+  };
+
+}, []);
+
+  useEffect(() => {
+
     socket.on("receive_message", (message) => {
 
-      console.log("New Message:", message);
-
       setMessages((prev) => [...prev, message]);
+
+      // Receiver ne isi chat ko open kiya hua hai
+      if (
+        selectedUser &&
+        message.sender.toString() === selectedUser._id &&
+        message.receiver.toString() === currentUser.id
+      ) {
+
+        socket.emit("message_seen", {
+          messageId: message._id,
+          senderId: message.sender,
+        });
+
+      }
 
     });
 
@@ -81,7 +112,7 @@ function Chat() {
 
     };
 
-  }, []);
+  }, [selectedUser]);
 
   useEffect(() => {
     const handleTyping = ({ sender }) => {
@@ -110,6 +141,54 @@ function Chat() {
       socket.off("user_stop_typing", handleStopTyping);
     };
   }, [selectedUser]);
+
+  useEffect(() => {
+
+
+    socket.on("message_seen", (messageId) => {
+
+
+      console.log(
+        "Message Seen:",
+        messageId
+      );
+
+
+      setMessages((prev) =>
+
+        prev.map((msg) =>
+
+
+          msg._id === messageId
+
+            ?
+
+            {
+              ...msg,
+              isSeen: true
+            }
+
+            :
+
+            msg
+
+
+        )
+
+      );
+
+
+    });
+
+
+    return () => {
+
+      socket.off("message_seen");
+
+    };
+
+
+  }, []);
   const fetchUsers = async () => {
 
     try {
@@ -141,39 +220,60 @@ function Chat() {
 
       setMessages(data.messages);
 
+      // -------------------------
+      // Mark unread messages as seen
+      // -------------------------
+
+      data.messages.forEach((msg) => {
+
+        const shouldMarkSeen =
+          msg.receiver.toString() === currentUser.id &&
+          msg.sender.toString() === selectedUser._id &&
+          !msg.isSeen;
+
+        if (shouldMarkSeen) {
+
+          socket.emit("message_seen", {
+            messageId: msg._id,
+            senderId: msg.sender,
+          });
+
+        }
+
+      });
+
     } catch (error) {
 
-      console.error(error.message);
+      console.error(error);
 
     }
 
   };
-  const handleSend = async () => {
+  const handleSend = () => {
+
     if (!newMessage.trim() || !selectedUser) return;
 
-    try {
-      const data = await sendMessage({
-        sender: currentUser.id,
-        receiver: selectedUser._id,
-        text: newMessage,
-      });
 
-      setMessages((prev) => [...prev, data.data]);
+    const messageData = {
 
-      socket.emit("send_message", data.data);
+      sender: currentUser.id,
 
-      // Stop typing after sending message
-      socket.emit("stop_typing", {
-        receiver: selectedUser._id,
-      });
+      receiver: selectedUser._id,
 
-      setNewMessage("");
+      text: newMessage,
 
-    } catch (error) {
-      console.error(error.message);
-    }
+    };
+
+
+    socket.emit(
+      "send_message",
+      messageData
+    );
+
+
+    setNewMessage("");
+
   };
-
   const isSelectedUserOnline =
     selectedUser && onlineUsers.includes(selectedUser._id);
   return (
@@ -218,28 +318,62 @@ function Chat() {
                 </p>
               ) : (
                 messages.map((msg) => {
+
                   const isSender =
                     msg.sender?.toString() === currentUser.id.toString();
 
                   return (
                     <div
                       key={msg._id}
-                      className={`mb-3 flex ${isSender ? "justify-end" : "justify-start"}`}
+                      className={`mb-3 flex ${isSender ? "justify-end" : "justify-start"
+                        }`}
                     >
+
                       <div
                         className={`px-4 py-2 rounded-lg max-w-xs ${isSender
                           ? "bg-blue-600 text-white"
                           : "bg-gray-200 text-gray-900"
                           }`}
                       >
-                        {msg.text}
+
+                        {/* Message Text */}
+                        <p>
+                          {msg.text}
+                        </p>
+
+
+                        {/* Status Tick (Only Sender Messages) */}
+                        {
+                          isSender && (
+
+                            <div className="text-xs text-right mt-1">
+
+                              {
+                                msg.isSeen
+                                  ?
+                                  "✓✓ Seen"
+                                  :
+                                  msg.delivered
+                                    ?
+                                    "✓✓"
+                                    :
+                                    "✓"
+                              }
+
+                            </div>
+
+                          )
+                        }
+
+
                       </div>
+
                     </div>
                   );
+
                 })
               )}
             </div>
-
             {/* Message Input */}
 
             <div className="bg-white border-t p-4 flex gap-3">
