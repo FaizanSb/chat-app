@@ -1,3 +1,4 @@
+import { useState } from "react";
 import UserCard from "./UserCard";
 
 function Sidebar({
@@ -6,51 +7,65 @@ function Sidebar({
   selectedUser,
   setSelectedUser
 }) {
-  return (
-    <div className="w-80 h-screen border-r border-gray-300 bg-white">
+  // Store search text
+  const [search, setSearch] = useState("");
 
-      {/* Header */}
-      <div className="p-5 border-b">
-        <h1 className="text-2xl font-bold">
-          Chat App
-        </h1>
-      </div>
+  // Filter users according to search text
+  const filteredUsers = (users || []).filter((user) =>
+  (user.username || "")
+    .toLowerCase()
+    .includes(search.toLowerCase())
+);
 
-      {/* Search */}
-      <div className="p-4">
-        <input
-          type="text"
-          placeholder="Search user..."
-          className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
+  return (<div className="w-80 h-screen border-r border-gray-300 bg-white">
 
-      {/* Users */}
-      <div className="px-3 space-y-2">
+    {/* Header */}
+    <div className="p-5 border-b">
+      <h1 className="text-2xl font-bold">
+        Chat App
+      </h1>
+    </div>
 
-        {users.length > 0 ? (
+    {/* Search */}
+    <div className="p-4">
+      <input
+        type="text"
+        placeholder="Search user..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+      />
+    </div>
 
-          users.map((user) => (
+    {/* Users */}
+    <div className="px-3 space-y-2">
 
-            <UserCard
-              key={user._id}
-              user={user}
-              onlineUsers={onlineUsers}
-              selected={selectedUser?._id === user._id}
-              onClick={() => setSelectedUser(user)}
-            />
-          ))
+      {filteredUsers.length > 0 ? (
 
-        ) : (
+        filteredUsers.map((user) => (
 
-          <p className="text-center text-gray-500">
-            No users found
-          </p>
-        )}
+          <UserCard
+            key={user._id}
+            user={user}
+            onlineUsers={onlineUsers}
+            selected={selectedUser?._id === user._id}
+            onClick={() => setSelectedUser(user)}
+          />
 
-      </div>
+        ))
+
+      ) : (
+
+        <p className="text-center text-gray-500">
+          No users found
+        </p>
+
+      )}
 
     </div>
+
+  </div>
+
   );
 }
 
