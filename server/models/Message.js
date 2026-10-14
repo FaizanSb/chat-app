@@ -1,3 +1,4 @@
+
 const mongoose = require("mongoose");
 
 const messageSchema = new mongoose.Schema(
@@ -14,10 +15,22 @@ const messageSchema = new mongoose.Schema(
       required: true,
     },
 
+    messageType: {
+      type: String,
+      enum: ["text", "audio"],
+      default: "text",
+      required: true,
+    },
+
     text: {
       type: String,
-      required: true,
       trim: true,
+      default: "",
+    },
+
+    audioUrl: {
+      type: String,
+      default: null,
     },
 
     delivered: {
@@ -34,5 +47,15 @@ const messageSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+messageSchema.pre("validate", function () {
+  if (this.messageType === "text" && !this.text?.trim()) {
+    this.invalidate("text", "Text message cannot be empty.");
+  }
+
+  if (this.messageType === "audio" && !this.audioUrl) {
+    this.invalidate("audioUrl", "Audio URL is required.");
+  }
+});
 
 module.exports = mongoose.model("Message", messageSchema);
