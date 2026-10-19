@@ -41,3 +41,17 @@ export const getMessages = async (senderId, receiverId) => {
   }
 
 };
+
+
+export const getMyProfile = async () => {
+  const response = await axiosInstance.get("/users/profile");
+  return response.data;
+};
+
+export const updateMyProfile = async (username) => {
+  const response = await axiosInstance.put("/users/profile", {
+    username,
+  });
+
+  return response.data;
+};

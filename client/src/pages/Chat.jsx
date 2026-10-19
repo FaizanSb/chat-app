@@ -20,9 +20,13 @@ function Chat() {
   const [audioError, setAudioError] = useState("");
   const [isSending, setIsSending] = useState(false);
 
-  const currentUser = JSON.parse(
-    localStorage.getItem("user") || "null"
-  );
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("user") || "null");
+    } catch {
+      return null;
+    }
+  });
 
   const typingTimeout = useRef(null);
   const mediaRecorderRef = useRef(null);
@@ -446,6 +450,44 @@ function Chat() {
     });
   };
 
+
+  const handleProfileUpdated = (updatedUser) => {
+    const updatedCurrentUser = {
+      ...currentUser,
+      ...updatedUser,
+    };
+
+    localStorage.setItem(
+      "user",
+      JSON.stringify(updatedCurrentUser)
+    );
+
+    setCurrentUser(updatedCurrentUser);
+
+    // Update the selected user's name if applicable
+    setUsers((previousUsers) =>
+      previousUsers.map((user) =>
+        String(user._id) === String(updatedUser.id || updatedUser._id)
+          ? { ...user, username: updatedUser.username }
+          : user
+      )
+    );
+
+    setSelectedUser((previousSelectedUser) => {
+      if (
+        previousSelectedUser &&
+        String(previousSelectedUser._id) ===
+        String(updatedUser.id || updatedUser._id)
+      ) {
+        return {
+          ...previousSelectedUser,
+          username: updatedUser.username,
+        };
+      }
+
+      return previousSelectedUser;
+    });
+  };
   const isSelectedUserOnline =
     selectedUser &&
     onlineUsers.includes(String(selectedUser._id));
@@ -457,6 +499,8 @@ function Chat() {
         onlineUsers={onlineUsers}
         selectedUser={selectedUser}
         setSelectedUser={setSelectedUser}
+        currentUser={currentUser}
+        onProfileUpdated={handleProfileUpdated}
       />
 
       {selectedUser ? (
@@ -490,16 +534,14 @@ function Chat() {
                 return (
                   <div
                     key={msg._id}
-                    className={`mb-3 flex ${
-                      isSender ? "justify-end" : "justify-start"
-                    }`}
+                    className={`mb-3 flex ${isSender ? "justify-end" : "justify-start"
+                      }`}
                   >
                     <div
-                      className={`px-4 py-2 rounded-lg max-w-[85%] sm:max-w-xs ${
-                        isSender
-                          ? "bg-blue-600 text-white"
-                          : "bg-gray-200 text-gray-900"
-                      }`}
+                      className={`px-4 py-2 rounded-lg max-w-[85%] sm:max-w-xs ${isSender
+                        ? "bg-blue-600 text-white"
+                        : "bg-gray-200 text-gray-900"
+                        }`}
                     >
                       {msg.messageType === "audio" ? (
                         <audio

@@ -1,15 +1,12 @@
 function UserCard({
   user,
-  onlineUsers,
+  onlineUsers = [],
   selected,
   onClick,
 }) {
-
-  console.log("onlineUsers:", onlineUsers);
-  console.log("Type:", typeof onlineUsers);
-  console.log("Is Array:", Array.isArray(onlineUsers));
-
-  const isOnline = onlineUsers.includes(user._id);
+  const isOnline = onlineUsers.some(
+    (id) => String(id) === String(user._id)
+  );
 
   return (
     <div
@@ -18,22 +15,23 @@ function UserCard({
         }`}
     >
       {/* Avatar */}
-      <div className="relative">
+      <div className="relative shrink-0">
         <div className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-lg">
-          {user.username.charAt(0).toUpperCase()}
+          {(user.username || "?").charAt(0).toUpperCase()}
         </div>
 
         <span
           className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${isOnline ? "bg-green-500" : "bg-gray-400"
             }`}
-        ></span>
+        />
       </div>
 
-      <div>
-        <h3 className="font-semibold">{user.username}</h3>
+      {/* User details */}
+      <div className="min-w-0">
+        <h3 className="font-semibold truncate">{user.username}</h3>
 
         <p className="text-sm text-gray-500 truncate">
-          {user.lastMessage}
+          {user.lastMessage || "No messages yet"}
         </p>
       </div>
     </div>
