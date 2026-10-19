@@ -22,9 +22,13 @@ export const getMyProfile = async () => {
   return response.data;
 };
 
-export const updateMyProfile = async (username) => {
-  const response = await axiosInstance.put("/users/profile", {
-    username,
+export const updateMyProfile = async (username, file) => {
+  const formData = new FormData();
+  formData.append("username", username);
+  if (file) formData.append("profilePicture", file);
+
+  const response = await axiosInstance.put("/users/profile", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
   });
   return response.data;
 };

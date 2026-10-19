@@ -1,3 +1,4 @@
+import Avatar from "./Avatar";
 function UserCard({
   user,
   onlineUsers = [],
@@ -16,9 +17,8 @@ function UserCard({
     >
       {/* Avatar */}
       <div className="relative shrink-0">
-        <div className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-lg">
-          {(user.username || "?").charAt(0).toUpperCase()}
-        </div>
+        
+        <Avatar user={user} size="w-12 h-12" text="text-lg" />
 
         <span
           className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${isOnline ? "bg-green-500" : "bg-gray-400"

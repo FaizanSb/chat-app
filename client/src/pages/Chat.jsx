@@ -1,11 +1,14 @@
-
 import { useEffect, useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { getUsers } from "../services/userService";
 import Sidebar from "../components/Sidebar";
+import Avatar from "../components/Avatar";
 import { getMessages } from "../services/messageService";
 import socket from "../socket";
 
 function Chat() {
+  const navigate = useNavigate();
+
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -56,6 +59,11 @@ function Chat() {
     };
 
     socket.on("connect", joinSocket);
+
+    // Logout ke baad dobara login par socket reconnect ho
+    if (!socket.connected) {
+      socket.connect();
+    }
 
     if (socket.connected) {
       joinSocket();
@@ -450,7 +458,6 @@ function Chat() {
     });
   };
 
-
   const handleProfileUpdated = (updatedUser) => {
     const updatedCurrentUser = {
       ...currentUser,
@@ -488,6 +495,14 @@ function Chat() {
       return previousSelectedUser;
     });
   };
+
+  const handleLogout = () => {
+    socket.disconnect(); // server ko offline ka pata chal jaye ga
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    navigate("/login");
+  };
+
   const isSelectedUserOnline =
     selectedUser &&
     onlineUsers.includes(String(selectedUser._id));
@@ -501,23 +516,28 @@ function Chat() {
         setSelectedUser={setSelectedUser}
         currentUser={currentUser}
         onProfileUpdated={handleProfileUpdated}
+        onLogout={handleLogout}
       />
 
       {selectedUser ? (
         <div className="flex-1 min-w-0 h-screen flex flex-col">
           {/* Chat header */}
-          <div className="bg-white border-b p-4">
-            <h2 className="text-xl font-semibold">
-              {selectedUser.username}
-            </h2>
+          <div className="bg-white border-b p-4 flex items-center gap-3">
+            <Avatar user={selectedUser} size="w-10 h-10" />
 
-            <p className="text-sm font-medium">
-              {isTyping
-                ? "✍️ Typing..."
-                : isSelectedUserOnline
-                  ? "🟢 Online"
-                  : "⚫ Offline"}
-            </p>
+            <div>
+              <h2 className="text-xl font-semibold">
+                {selectedUser.username}
+              </h2>
+
+              <p className="text-sm font-medium">
+                {isTyping
+                  ? "✍️ Typing..."
+                  : isSelectedUserOnline
+                    ? "🟢 Online"
+                    : "⚫ Offline"}
+              </p>
+            </div>
           </div>
 
           {/* Messages */}

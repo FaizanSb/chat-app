@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import UserCard from "./UserCard";
 import {
   getMyProfile,
   updateMyProfile,
 } from "../services/userService";
+import Avatar from "./Avatar";
 
 function Sidebar({
   users,
@@ -12,6 +13,7 @@ function Sidebar({
   setSelectedUser,
   currentUser,
   onProfileUpdated,
+  onLogout,
 }) {
   const [search, setSearch] = useState("");
   const [showProfile, setShowProfile] = useState(false);
@@ -24,6 +26,10 @@ function Sidebar({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState("");
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     setProfile(currentUser);
@@ -76,7 +82,7 @@ function Sidebar({
     setSuccess("");
 
     try {
-      const data = await updateMyProfile(trimmedUsername);
+      const data = await updateMyProfile(trimmedUsername, selectedFile);
 
       setProfile(data.user);
       setUsername(data.user.username);
@@ -85,20 +91,48 @@ function Sidebar({
       onProfileUpdated(data.user);
 
       setIsEditing(false);
-      setSuccess("Username updated successfully.");
+      clearSelectedFile();
+      setSuccess("Profile updated successfully.");
     } catch (err) {
       console.error("Update profile error:", err);
       setError(
         err.response?.data?.message ||
-        "Could not update username. Please try again."
+        "Could not update profile. Please try again."
       );
     } finally {
       setSaving(false);
     }
   };
 
+  const clearSelectedFile = () => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setSelectedFile(null);
+    setPreviewUrl("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleFileChange = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setError("Please select an image file.");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setError("Image must be smaller than 2MB.");
+      return;
+    }
+
+    setError("");
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setSelectedFile(file);
+    setPreviewUrl(URL.createObjectURL(file));
+  };
+
   const handleCancelEdit = () => {
     setUsername(profile?.username || "");
+    clearSelectedFile();
     setIsEditing(false);
     setError("");
     setSuccess("");
@@ -148,11 +182,7 @@ function Sidebar({
           onClick={handleOpenProfile}
           className="w-full flex items-center gap-3 rounded-xl border p-3 text-left hover:bg-gray-50"
         >
-          <div className="w-11 h-11 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-lg shrink-0">
-            {(currentUser?.username || "?")
-              .charAt(0)
-              .toUpperCase()}
-          </div>
+          <Avatar user={currentUser} size="w-11 h-11" text="text-lg" />
 
           <div className="min-w-0 flex-1">
             <p className="font-semibold truncate">
@@ -174,7 +204,10 @@ function Sidebar({
 
               <button
                 type="button"
-                onClick={() => setShowProfile(false)}
+                onClick={() => {
+                  clearSelectedFile();
+                  setShowProfile(false);
+                }}
                 className="text-2xl text-gray-500 hover:text-gray-800"
                 aria-label="Close profile"
               >
@@ -187,11 +220,35 @@ function Sidebar({
             ) : (
               <>
                 <div className="flex flex-col items-center mb-6">
-                  <div className="w-20 h-20 rounded-full bg-blue-600 text-white flex items-center justify-center text-3xl font-bold">
-                    {(profile?.username || "?")
-                      .charAt(0)
-                      .toUpperCase()}
-                  </div>
+                  <Avatar
+                    user={{
+                      ...profile,
+                      profilePicture:
+                        previewUrl || profile?.profilePicture,
+                    }}
+                    size="w-24 h-24"
+                    text="text-4xl"
+                  />
+
+                  {isEditing && (
+                    <>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        hidden
+                        onChange={handleFileChange}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current.click()}
+                        className="mt-3 text-sm text-blue-600 hover:underline"
+                      >
+                        Change photo
+                      </button>
+                    </>
+                  )}
+
                   <p className="mt-3 font-semibold text-lg">
                     {profile?.username}
                   </p>
@@ -300,6 +357,14 @@ function Sidebar({
                       className="mt-6 w-full bg-blue-600 text-white rounded-lg px-4 py-2 hover:bg-blue-700"
                     >
                       Edit Profile
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={onLogout}
+                      className="mt-3 w-full bg-red-500 text-white rounded-lg px-4 py-2 hover:bg-red-600"
+                    >
+                      Log out
                     </button>
                   </>
                 )}

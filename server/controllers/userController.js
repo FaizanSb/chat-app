@@ -1,6 +1,8 @@
 
 const User = require("../models/user");
 const Message = require("../models/Message");
+const fs = require("fs");
+const path = require("path");
 
 // 1. Get all other users for the chat sidebar
 exports.getUsers = async (req, res) => {
@@ -102,14 +104,33 @@ exports.updateMyProfile = async (req, res) => {
       });
     }
 
-    const user = await User.findByIdAndUpdate(
-      req.user.id,
-      { username },
-      {
-        new: true,
-        runValidators: true,
+    const existingUser = await User.findById(req.user.id);
+
+    if (!existingUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const updates = { username };
+
+    if (req.file) {
+      updates.profilePicture = `/uploads/profile/${req.file.filename}`;
+
+      // purani dp delete kro (disk saaf rahy gi)
+      if (existingUser.profilePicture?.startsWith("/uploads/profile/")) {
+        fs.unlink(
+          path.join(process.cwd(), existingUser.profilePicture),
+          () => { }
+        );
       }
-    ).select("-password");
+    }
+
+    const user = await User.findByIdAndUpdate(req.user.id, updates, {
+      new: true,
+      runValidators: true,
+    }).select("-password");
 
     if (!user) {
       return res.status(404).json({

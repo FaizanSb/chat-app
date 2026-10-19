@@ -41,6 +41,10 @@ app.use("/api/users", userRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/audio", audioRoutes);
 
+app.use(
+  "/uploads/profile",
+  express.static(require("path").join(process.cwd(), "uploads", "profile"))
+);
 // Start server
 const startServer = async () => {
   try {
