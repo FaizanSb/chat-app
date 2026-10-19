@@ -13,14 +13,14 @@ function Avatar({ user, size = "w-10 h-10", text = "text-base" }) {
       <img
         src={src}
         alt={user?.username || "avatar"}
-        className={`${size} rounded-full object-cover shrink-0`}
+        className={`${size} shrink-0 rounded-full object-cover `}
       />
     );
   }
 
   return (
     <div
-      className={`${size} ${text} rounded-full bg-blue-600 text-white flex items-center justify-center font-bold shrink-0`}
+      className={`${size} ${text} flex flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-slate-700 to-slate-900 font-semibold text-white`}
     >
       {(user?.username || "?").charAt(0).toUpperCase()}
     </div>

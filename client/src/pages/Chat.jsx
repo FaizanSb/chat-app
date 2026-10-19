@@ -6,6 +6,101 @@ import Avatar from "../components/Avatar";
 import { getMessages } from "../services/messageService";
 import socket from "../socket";
 
+// ---------- Small inline icons (no extra library needed) ----------
+const iconProps = {
+  className: "h-5 w-5",
+  fill: "none",
+  viewBox: "0 0 24 24",
+  stroke: "currentColor",
+  strokeWidth: 1.8,
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  "aria-hidden": true,
+};
+
+const MicIcon = () => (
+  <svg {...iconProps}>
+    <rect x="9" y="3" width="6" height="12" rx="3" />
+    <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
+  </svg>
+);
+
+const StopIcon = () => (
+  <svg {...iconProps} fill="currentColor" stroke="none">
+    <rect x="6" y="6" width="12" height="12" rx="2" />
+  </svg>
+);
+
+const SendIcon = () => (
+  <svg {...iconProps}>
+    <path d="M22 2 11 13" />
+    <path d="M22 2 15 22l-4-9-9-4 20-7Z" />
+  </svg>
+);
+
+const CloseIcon = () => (
+  <svg {...iconProps}>
+    <path d="M6 6l12 12M18 6 6 18" />
+  </svg>
+);
+
+const BackIcon = () => (
+  <svg {...iconProps}>
+    <path d="m15 18-6-6 6-6" />
+  </svg>
+);
+
+const ChatBubbleIcon = () => (
+  <svg {...iconProps} className="h-8 w-8">
+    <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z" />
+  </svg>
+);
+
+const CheckIcon = ({ double }) => (
+  <svg
+    className="h-3.5 w-3.5"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={2.4}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    {double ? (
+      <>
+        <path d="m2 13 4 4L14 8" />
+        <path d="m10 15 2 2 9-10" />
+      </>
+    ) : (
+      <path d="m5 13 4 4L19 7" />
+    )}
+  </svg>
+);
+
+// Message status: Sent / Delivered / Seen
+const MessageStatus = ({ msg }) => {
+  if (msg.isSeen) {
+    return (
+      <span className="inline-flex items-center gap-1 text-teal-300">
+        <CheckIcon double /> Seen
+      </span>
+    );
+  }
+  if (msg.delivered) {
+    return (
+      <span className="inline-flex items-center gap-1 text-slate-400">
+        <CheckIcon double /> Delivered
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 text-slate-400">
+      <CheckIcon /> Sent
+    </span>
+  );
+};
+
 function Chat() {
   const navigate = useNavigate();
 
@@ -35,6 +130,7 @@ function Chat() {
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const audioStreamRef = useRef(null);
+  const messagesEndRef = useRef(null);
 
   // Load users
   useEffect(() => {
@@ -246,6 +342,11 @@ function Chat() {
       clearTimeout(typingTimeout.current);
     };
   }, [selectedUser?._id]);
+
+  // Naya message aane par neeche tak scroll karo
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, selectedUser?._id]);
 
   // Start audio recording
   const handleStartRecording = async () => {
@@ -503,12 +604,22 @@ function Chat() {
     navigate("/login");
   };
 
+  // Mobile: chat se wapas user list pr
+  const handleBack = () => {
+    handleCancelRecording();
+    setIsTyping(false);
+    setSelectedUser(null);
+  };
+
   const isSelectedUserOnline =
     selectedUser &&
     onlineUsers.includes(String(selectedUser._id));
 
+  const canSend =
+    !isSending && !isRecording && (audioBlob || newMessage.trim());
+
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-[100dvh] overflow-hidden bg-slate-100">
       <Sidebar
         users={users}
         onlineUsers={onlineUsers}
@@ -520,201 +631,253 @@ function Chat() {
       />
 
       {selectedUser ? (
-        <div className="flex-1 min-w-0 h-screen flex flex-col">
+        <div className="flex h-[100dvh] min-w-0 flex-1 flex-col">
           {/* Chat header */}
-          <div className="bg-white border-b p-4 flex items-center gap-3">
-            <Avatar user={selectedUser} size="w-10 h-10" />
+          <div className="flex items-center gap-2 border-b border-slate-200 bg-white px-3 py-3 sm:gap-3 sm:px-5">
+            {/* Back button: sirf mobile pr */}
+            <button
+              type="button"
+              onClick={handleBack}
+              aria-label="Back to chats"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-600 transition hover:bg-slate-100 focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-100 md:hidden"
+            >
+              <BackIcon />
+            </button>
 
-            <div>
-              <h2 className="text-xl font-semibold">
+            <Avatar user={selectedUser} size="w-10 h-10 sm:w-11 sm:h-11" />
+
+            <div className="min-w-0">
+              <h2 className="truncate text-base font-semibold text-slate-900">
                 {selectedUser.username}
               </h2>
 
-              <p className="text-sm font-medium">
-                {isTyping
-                  ? "✍️ Typing..."
-                  : isSelectedUserOnline
-                    ? "🟢 Online"
-                    : "⚫ Offline"}
-              </p>
+              {isTyping ? (
+                <p className="flex items-center gap-1.5 text-sm font-medium text-teal-600">
+                  typing
+                  <span className="flex items-center gap-0.5">
+                    <span className="h-1 w-1 animate-bounce rounded-full bg-teal-500 [animation-delay:-0.3s]" />
+                    <span className="h-1 w-1 animate-bounce rounded-full bg-teal-500 [animation-delay:-0.15s]" />
+                    <span className="h-1 w-1 animate-bounce rounded-full bg-teal-500" />
+                  </span>
+                </p>
+              ) : (
+                <p className="flex items-center gap-1.5 text-sm text-slate-500">
+                  <span
+                    className={`h-2 w-2 rounded-full ${
+                      isSelectedUserOnline ? "bg-emerald-500" : "bg-slate-300"
+                    }`}
+                  />
+                  {isSelectedUserOnline ? "Online" : "Offline"}
+                </p>
+              )}
             </div>
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4">
+          <div className="min-h-0 flex-1 overflow-y-auto bg-slate-50 px-3 py-4 sm:px-6 sm:py-6">
             {messages.length === 0 ? (
-              <p className="text-gray-400 text-center">
-                No messages yet
-              </p>
+              <div className="flex h-full flex-col items-center justify-center px-4 text-center">
+                <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+                  <ChatBubbleIcon />
+                </span>
+                <p className="mt-4 text-sm font-medium text-slate-700">
+                  No messages yet
+                </p>
+                <p className="mt-1 break-words text-sm text-slate-500">
+                  Say hi to {selectedUser.username} to start the conversation.
+                </p>
+              </div>
             ) : (
-              messages.map((msg) => {
-                const isSender =
-                  String(msg.sender) === String(currentUser?.id);
+              <div className="mx-auto max-w-3xl space-y-3">
+                {messages.map((msg) => {
+                  const isSender =
+                    String(msg.sender) === String(currentUser?.id);
 
-                return (
-                  <div
-                    key={msg._id}
-                    className={`mb-3 flex ${isSender ? "justify-end" : "justify-start"
-                      }`}
-                  >
+                  return (
                     <div
-                      className={`px-4 py-2 rounded-lg max-w-[85%] sm:max-w-xs ${isSender
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-200 text-gray-900"
-                        }`}
+                      key={msg._id}
+                      className={`flex ${isSender ? "justify-end" : "justify-start"}`}
                     >
-                      {msg.messageType === "audio" ? (
-                        <audio
-                          controls
-                          preload="metadata"
-                          src={msg.audioUrl}
-                          className="max-w-full"
-                        >
-                          Your browser does not support audio playback.
-                        </audio>
-                      ) : (
-                        <p className="whitespace-pre-wrap break-words">
-                          {msg.text}
-                        </p>
-                      )}
+                      <div
+                        className={`max-w-[85%] px-4 py-2.5 sm:max-w-md ${
+                          isSender
+                            ? "rounded-2xl rounded-br-sm bg-black text-white shadow-sm"
+                            : "rounded-2xl rounded-bl-sm border border-slate-200 bg-yellow-200 text-slate-800 shadow-sm"
+                        }`}
+                      >
+                        {msg.messageType === "audio" ? (
+                          <audio
+                            controls
+                            preload="metadata"
+                            src={msg.audioUrl}
+                            className="h-10 w-full min-w-[12rem] max-w-full sm:w-60"
+                          >
+                            Your browser does not support audio playback.
+                          </audio>
+                        ) : (
+                          <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">
+                            {msg.text}
+                          </p>
+                        )}
 
-                      {/* Delivery/seen status */}
-                      {isSender && (
-                        <div className="text-xs text-right mt-1">
-                          {msg.isSeen
-                            ? "✓✓ Seen"
-                            : msg.delivered
-                              ? "✓✓ Delivered"
-                              : "✓ Sent"}
-                        </div>
-                      )}
+                        {/* Delivery/seen status */}
+                        {isSender && (
+                          <div className="mt-1 flex justify-end text-[11px]">
+                            <MessageStatus msg={msg} />
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                );
-              })
+                  );
+                })}
+                <div ref={messagesEndRef} />
+              </div>
             )}
           </div>
 
-          {/* Single input area and single Send button */}
-          <div className="bg-white border-t p-4 flex flex-col gap-3">
-            {/* Recording controls */}
-            <div className="flex items-center gap-3">
-              {!isRecording ? (
-                <button
-                  type="button"
-                  onClick={handleStartRecording}
-                  disabled={!!audioPreviewUrl || isSending}
-                  className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 disabled:opacity-50"
-                >
-                  🎙️ Record
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleStopRecording}
-                  className="bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-900"
-                >
-                  ⏹ Stop Recording
-                </button>
-              )}
-
+          {/* Input area */}
+          <div className="border-t border-slate-200 bg-white px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6 sm:pt-4 sm:pb-[max(1rem,env(safe-area-inset-bottom))]">
+            <div className="mx-auto max-w-3xl space-y-3">
+              {/* Recording indicator */}
               {isRecording && (
-                <span className="text-red-600 font-medium">
-                  ● Recording...
-                </span>
+                <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5">
+                  <span className="relative flex h-2.5 w-2.5 shrink-0">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500" />
+                  </span>
+                  <span className="text-sm font-medium text-red-700">
+                    Recording... tap stop when you're done
+                  </span>
+                </div>
               )}
-            </div>
 
-            {/* Audio preview */}
-            {audioPreviewUrl && (
-              <div className="flex flex-wrap items-center gap-3">
-                <audio
-                  controls
-                  src={audioPreviewUrl}
-                  className="max-w-full"
+              {/* Audio preview */}
+              {audioPreviewUrl && (
+                <div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 sm:px-4">
+                  <audio
+                    controls
+                    src={audioPreviewUrl}
+                    className="h-10 w-full max-w-full sm:w-60"
+                  />
+
+                  <span className="text-sm text-slate-500">
+                    Ready to send
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={handleCancelRecording}
+                    disabled={isSending}
+                    className="ml-auto inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 disabled:opacity-50"
+                  >
+                    <CloseIcon />
+                    Discard
+                  </button>
+                </div>
+              )}
+
+              {audioError && (
+                <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700">
+                  {audioError}
+                </p>
+              )}
+
+              {/* Text input + record + ONE Send button */}
+              <form
+                className="flex items-center gap-2"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  handleSend();
+                }}
+              >
+                {!isRecording ? (
+                  <button
+                    type="button"
+                    onClick={handleStartRecording}
+                    disabled={!!audioPreviewUrl || isSending}
+                    aria-label="Record voice message"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition hover:bg-slate-200 hover:text-slate-900 focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <MicIcon />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleStopRecording}
+                    aria-label="Stop recording"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-500 text-white transition hover:bg-red-600 focus:outline-none focus-visible:ring-4 focus-visible:ring-red-200"
+                  >
+                    <StopIcon />
+                  </button>
+                )}
+
+                <input
+                  type="text"
+                  placeholder={
+                    audioBlob
+                      ? "Voice message ready. Press send."
+                      : "Type a message..."
+                  }
+                  value={newMessage}
+                  disabled={!!audioBlob || isRecording || isSending}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setNewMessage(value);
+
+                    if (!selectedUser) return;
+
+                    if (value.trim()) {
+                      socket.emit("typing", {
+                        sender: currentUser.id,
+                        receiver: selectedUser._id,
+                      });
+                    } else {
+                      socket.emit("stop_typing", {
+                        receiver: selectedUser._id,
+                      });
+                    }
+                  }}
+                  className="h-11 min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
                 />
 
                 <button
-                  type="button"
-                  onClick={handleCancelRecording}
-                  disabled={isSending}
-                  className="bg-gray-200 text-gray-800 px-3 py-2 rounded-lg hover:bg-gray-300 disabled:opacity-50"
+                  type="submit"
+                  disabled={!canSend}
+                  aria-label="Send message"
+                  className="flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white shadow-lg shadow-slate-900/10 transition hover:bg-slate-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-200 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 sm:px-5"
                 >
-                  Cancel
+                  {isSending ? (
+                    "Sending..."
+                  ) : (
+                    <>
+                      <span className="hidden sm:inline">
+                        {audioBlob ? "Send voice" : "Send"}
+                      </span>
+                      <SendIcon />
+                    </>
+                  )}
                 </button>
-
-                <span className="text-sm text-gray-500">
-                  Ready to send
-                </span>
-              </div>
-            )}
-
-            {audioError && (
-              <p className="text-sm text-red-600">
-                {audioError}
-              </p>
-            )}
-
-            {/* Text input + ONE Send button */}
-            <form
-              className="flex gap-3"
-              onSubmit={(event) => {
-                event.preventDefault();
-                handleSend();
-              }}
-            >
-              <input
-                type="text"
-                placeholder={
-                  audioBlob
-                    ? "Audio ready — press Send"
-                    : "Type a message..."
-                }
-                value={newMessage}
-                disabled={!!audioBlob || isRecording || isSending}
-                onChange={(event) => {
-                  const value = event.target.value;
-                  setNewMessage(value);
-
-                  if (!selectedUser) return;
-
-                  if (value.trim()) {
-                    socket.emit("typing", {
-                      sender: currentUser.id,
-                      receiver: selectedUser._id,
-                    });
-                  } else {
-                    socket.emit("stop_typing", {
-                      receiver: selectedUser._id,
-                    });
-                  }
-                }}
-                className="flex-1 min-w-0 border rounded-lg px-4 py-2 outline-none disabled:bg-gray-100"
-              />
-
-              <button
-                type="submit"
-                disabled={
-                  isSending ||
-                  isRecording ||
-                  (!audioBlob && !newMessage.trim())
-                }
-                className="bg-blue-600 text-white px-6 rounded-lg hover:bg-blue-700 disabled:opacity-50"
-              >
-                {isSending
-                  ? "Sending..."
-                  : audioBlob
-                    ? "Send Voice"
-                    : "Send"}
-              </button>
-            </form>
+              </form>
+            </div>
           </div>
         </div>
       ) : (
-        <div className="flex-1 h-screen flex items-center justify-center">
-          <h1 className="text-3xl text-gray-400 font-semibold text-center">
-            Select a user to start chatting
-          </h1>
+        /* Empty state: mobile pr hidden (wahan sirf user list dikhti ha) */
+        <div className="relative hidden h-[100dvh] flex-1 items-center justify-center overflow-hidden bg-slate-50 px-6 md:flex">
+          <div className="pointer-events-none absolute -left-24 -top-24 h-96 w-96 rounded-full bg-teal-500/10 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-32 -right-20 h-96 w-96 rounded-full bg-indigo-500/10 blur-3xl" />
+
+          <div className="relative text-center">
+            <span className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-slate-900 text-teal-400 shadow-xl shadow-slate-900/10">
+              <ChatBubbleIcon />
+            </span>
+            <h1 className="mt-6 text-2xl font-bold tracking-tight text-slate-900">
+              Pick a conversation
+            </h1>
+            <p className="mt-2 max-w-xs text-sm text-slate-500">
+              Choose someone from the list to read your messages or start a new chat.
+            </p>
+          </div>
         </div>
       )}
     </div>
