@@ -226,7 +226,7 @@ Open the local URL provided by Vite in your browser.
 **Muhammad Faizan**
 
 - GitHub: [FaizanSb](https://github.com/FaizanSb)
-- LinkedIn: [Your LinkedIn Profile](https://www.linkedin.com/in/muhammad-faizan-447152336/)
+- LinkedIn: [Muhammad Faizan](https://www.linkedin.com/in/muhammad-faizan-447152336/)
 
 ## 📄 License
 
