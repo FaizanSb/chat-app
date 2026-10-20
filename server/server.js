@@ -54,8 +54,8 @@ app.use("/api/audio", audioRoutes);
 // Start server
 const startServer = async () => {
   try {
-    const dns = require("dns");
-    dns.setServers(["8.8.8.8", "1.1.1.1"]);
+    // const dns = require("dns");
+    // dns.setServers(["8.8.8.8", "1.1.1.1"]);
 
     await connectDB();
     server.listen(PORT, () => {
