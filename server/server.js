@@ -1,9 +1,13 @@
+require("dotenv").config();
+
+if (process.env.USE_CUSTOM_DNS === "true") {
+  require("dns").setServers(["8.8.8.8", "1.1.1.1"]);
+}
 
 const express = require("express");
 const cors = require("cors");
-require("dotenv").config();
-
 const http = require("http");
+const path = require("path");
 
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
@@ -17,7 +21,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors());
+app.use(cors({ origin: process.env.CLIENT_URL }));
 app.use(express.json());
 
 // Create HTTP server
@@ -31,25 +35,29 @@ app.get("/", (req, res) => {
   res.send("Server is running smoothly!");
 });
 
+// Static files
 app.use(
   "/uploads/audio",
-  express.static(require("path").join(process.cwd(), "uploads", "audio"))
+  express.static(path.join(process.cwd(), "uploads", "audio"))
 );
+app.use(
+  "/uploads/profile",
+  express.static(path.join(process.cwd(), "uploads", "profile"))
+);
+
 // API routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/audio", audioRoutes);
 
-app.use(
-  "/uploads/profile",
-  express.static(require("path").join(process.cwd(), "uploads", "profile"))
-);
 // Start server
 const startServer = async () => {
   try {
+    const dns = require("dns");
+    dns.setServers(["8.8.8.8", "1.1.1.1"]);
+    
     await connectDB();
-
     server.listen(PORT, () => {
       console.log(`Server is listening on port ${PORT}`);
     });

@@ -3,6 +3,7 @@ const User = require("../models/user");
 const Message = require("../models/Message");
 const fs = require("fs");
 const path = require("path");
+const uploadToCloudinary = require("../utils/uploadToCloudinary");
 
 // 1. Get all other users for the chat sidebar
 exports.getUsers = async (req, res) => {
@@ -116,15 +117,15 @@ exports.updateMyProfile = async (req, res) => {
     const updates = { username };
 
     if (req.file) {
-      updates.profilePicture = `/uploads/profile/${req.file.filename}`;
+      const result = await uploadToCloudinary(req.file.buffer, {
+        folder: "chat-app/profile",
+        public_id: `user-${req.user.id}`, // har user ki DP ka fixed naam
+        overwrite: true,                  // nayi DP purani ko replace kar degi
+        invalidate: true,                 // CDN cache clear
+        resource_type: "image",
+      });
 
-      // purani dp delete kro (disk saaf rahy gi)
-      if (existingUser.profilePicture?.startsWith("/uploads/profile/")) {
-        fs.unlink(
-          path.join(process.cwd(), existingUser.profilePicture),
-          () => { }
-        );
-      }
+      updates.profilePicture = result.secure_url;
     }
 
     const user = await User.findByIdAndUpdate(req.user.id, updates, {

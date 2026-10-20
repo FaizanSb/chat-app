@@ -1,82 +1,44 @@
-
 const express = require("express");
 const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
-const crypto = require("crypto");
+const uploadToCloudinary = require("../utils/uploadToCloudinary");
 
 const router = express.Router();
 
-const audioDirectory = path.join(
-  process.cwd(),
-  "uploads",
-  "audio"
-);
-
-fs.mkdirSync(audioDirectory, { recursive: true });
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, audioDirectory);
-  },
-
-  filename: (req, file, cb) => {
-    const extensionMap = {
-      "audio/webm": ".webm",
-      "audio/ogg": ".ogg",
-      "audio/mp4": ".mp4",
-      "audio/mpeg": ".mp3",
-      "audio/wav": ".wav",
-      "audio/x-wav": ".wav",
-    };
-
-    const extension = extensionMap[file.mimetype];
-
-    if (!extension) {
-      return cb(new Error("Unsupported audio format"));
-    }
-
-    cb(null, `${crypto.randomUUID()}${extension}`);
-  },
-});
+const allowedTypes = [
+  "audio/webm",
+  "audio/ogg",
+  "audio/mp4",
+  "audio/mpeg",
+  "audio/wav",
+  "audio/x-wav",
+];
 
 const upload = multer({
-  storage,
-  limits: {
-    fileSize: 10 * 1024 * 1024,
-  },
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    const allowedTypes = [
-      "audio/webm",
-      "audio/ogg",
-      "audio/mp4",
-      "audio/mpeg",
-      "audio/wav",
-      "audio/x-wav",
-    ];
-
-    cb(
-      allowedTypes.includes(file.mimetype)
-        ? null
-        : new Error("Unsupported audio format"),
-      allowedTypes.includes(file.mimetype)
-    );
+    if (allowedTypes.includes(file.mimetype)) cb(null, true);
+    else cb(new Error("Unsupported audio format"));
   },
 });
 
-router.post("/", upload.single("audio"), (req, res) => {
+
+router.post("/", upload.single("audio"), async (req, res) => {
   if (!req.file) {
-    return res.status(400).json({
-      message: "Please upload an audio file.",
-    });
+    return res.status(400).json({ message: "Please upload an audio file." });
   }
 
-  const audioUrl =
-    `${req.protocol}://${req.get("host")}/uploads/audio/${req.file.filename}`;
+  try {
+    const result = await uploadToCloudinary(req.file.buffer, {
+      folder: "chat-app/audio",
+      resource_type: "video", // Cloudinary audio ko "video" category mein rakhta hai
+    });
 
-  res.status(201).json({
-    audioUrl,
-  });
+    res.status(201).json({ audioUrl: result.secure_url });
+  } catch (error) {
+    console.error("Audio upload failed:", error.message);
+    res.status(500).json({ message: "Audio upload failed." });
+  }
 });
 
 module.exports = router;

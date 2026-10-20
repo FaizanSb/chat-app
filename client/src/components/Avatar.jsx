@@ -1,4 +1,4 @@
-const SERVER_URL = "http://localhost:5000";
+const SERVER_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 function Avatar({ user, size = "w-10 h-10", text = "text-base" }) {
   const pic = user?.profilePicture;
@@ -13,7 +13,7 @@ function Avatar({ user, size = "w-10 h-10", text = "text-base" }) {
       <img
         src={src}
         alt={user?.username || "avatar"}
-        className={`${size} shrink-0 rounded-full object-cover `}
+        className={`${size} shrink-0 rounded-full object-cover`}
       />
     );
   }

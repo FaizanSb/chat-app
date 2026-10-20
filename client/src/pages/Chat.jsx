@@ -6,6 +6,8 @@ import Avatar from "../components/Avatar";
 import { getMessages } from "../services/messageService";
 import socket from "../socket";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
 // ---------- Small inline icons (no extra library needed) ----------
 const iconProps = {
   className: "h-5 w-5",
@@ -504,7 +506,7 @@ function Chat() {
         formData.append("audio", audioBlob, "voice-message.webm");
 
         const response = await fetch(
-          "http://localhost:5000/api/audio",
+          `${API_URL}/api/audio`,
           {
             method: "POST",
             body: formData,

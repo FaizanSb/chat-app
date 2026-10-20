@@ -1,17 +1,16 @@
 // 📍 Location: src/utils/axios.js
 import axios from 'axios'
 
-// Ye ek hi instance poore app mein reuse hoga — chahe authService ho,
-// chahe kal userService ya chatService bane, sabko yehi milega
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+
 const axiosInstance = axios.create({
-  baseURL: 'http://localhost:5000/api', // /auth wagera services mein lagega
+  baseURL: `${API_URL}/api`, // /auth wagera services mein lagega
   headers: {
     'Content-Type': 'application/json',
   },
 })
 
-// Interceptor: har request ke saath agar token localStorage mein hai,
-// toh apne aap Authorization header mein laga do — baar baar likhna nahi padega
+// Har request ke saath token automatically lagao
 axiosInstance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token')
@@ -23,14 +22,13 @@ axiosInstance.interceptors.request.use(
   (error) => Promise.reject(error)
 )
 
-// Interceptor: agar response 401 (unauthorized) aaye, toh yahan se
-// centrally handle kar sakte ho — jaise user ko login page pe bhej dena
+// 401 aaye to centrally handle karo
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
       console.warn('Session expired or unauthorized. Consider redirecting to login.')
-      // window.location.href = '/login' // chaho toh yahan uncomment kar lena
+      // window.location.href = '/login'
     }
     return Promise.reject(error)
   }
